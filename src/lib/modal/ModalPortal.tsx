@@ -1,4 +1,6 @@
-import { ReactElement, useEffect, useState } from "react";
+"use client";
+
+import { ReactElement } from "react";
 import ReactDOM from "react-dom";
 
 interface IProps {
@@ -7,14 +9,6 @@ interface IProps {
 }
 
 export default function ModalPortal({ modalId, children }: IProps) {
-  const [isMount, setIsMount] = useState(false);
-
-  useEffect(() => {
-    setIsMount(true);
-  }, []);
-
-  if (!isMount) return false;
-
   const modalElement = document.getElementById(modalId)!;
   return ReactDOM.createPortal(children, modalElement);
 }

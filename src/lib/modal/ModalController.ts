@@ -1,3 +1,5 @@
+"use client";
+
 type TSubscribeCallback = (isOpen: boolean) => void;
 
 const ESC = "Escape";
@@ -71,14 +73,14 @@ export default class ModalController {
   }
 
   private addEventListener() {
-    if (typeof window !== "undefined" && !this.isInitEvent) {
+    if (!this.isInitEvent) {
       this.isInitEvent = true;
       document.addEventListener("keydown", this.eventListener);
     }
   }
 
   private removeEventListener() {
-    if (typeof window !== "undefined" && this.isInitEvent) {
+    if (this.isInitEvent) {
       this.isInitEvent = false;
       document.removeEventListener("keydown", this.eventListener);
     }
