@@ -1,7 +1,5 @@
-"use client";
-
-import { ReactElement } from "react";
-import ReactDOM from "react-dom";
+import { ReactElement } from 'react';
+import ReactDOM from 'react-dom';
 
 interface IProps {
   modalId: string;

@@ -1,15 +1,13 @@
-"use client";
-
 type TSubscribeCallback = (isOpen: boolean) => void;
 
-const ESC = "Escape";
+const ESC = 'Escape';
 
-export default class ModalController {
-  private static instance: ModalController;
+export default class ModalService {
+  private static instance: ModalService;
   private subscriptions: Map<string, TSubscribeCallback>;
   private ids: string[];
   private isInitEvent: boolean;
-  private eventListener: (e: KeyboardEvent) => void;
+  private readonly eventListener: (e: KeyboardEvent) => void;
 
   private constructor() {
     this.subscriptions = new Map();
@@ -21,6 +19,8 @@ export default class ModalController {
         const modalId = this.ids.pop();
         if (modalId) {
           this.unpublish(modalId);
+          const subscribe = this.getSubscribe(modalId);
+          return subscribe && subscribe(false);
         }
         if (this.ids.length === 0) {
           this.removeEventListener();
@@ -31,7 +31,7 @@ export default class ModalController {
 
   public static getInstance() {
     if (!this.instance) {
-      this.instance = new ModalController();
+      this.instance = new ModalService();
     }
     return this.instance;
   }
@@ -41,30 +41,26 @@ export default class ModalController {
   }
 
   public unsubscribe(modalId: string) {
+    this.subscriptions.delete(modalId);
+  }
+
+  public clean(modalId: string) {
     this.removeEventListener();
     this.removeElement(modalId);
   }
 
   public publish(modalId: string) {
-    const subscribe = this.getSubscribe(modalId);
-    if (subscribe) {
-      this.createElementAppendBody(modalId);
-      this.controllBodyOverflow(false);
-      this.ids.push(modalId);
-      this.addEventListener();
-      subscribe(true);
-    }
+    this.createElementAppendBody(modalId);
+    this.controlBodyOverflow(false);
+    this.ids.push(modalId);
+    this.addEventListener();
   }
 
   public unpublish(modalId: string) {
-    const subscribe = this.getSubscribe(modalId);
-    if (subscribe) {
-      this.removeElement(modalId);
-      this.ids.pop();
-      if (this.ids.length === 0) {
-        this.controllBodyOverflow(true);
-      }
-      subscribe(false);
+    this.removeElement(modalId);
+    this.ids.pop();
+    if (this.ids.length === 0) {
+      this.controlBodyOverflow(true);
     }
   }
 
@@ -75,25 +71,25 @@ export default class ModalController {
   private addEventListener() {
     if (!this.isInitEvent) {
       this.isInitEvent = true;
-      document.addEventListener("keydown", this.eventListener);
+      document.addEventListener('keydown', this.eventListener);
     }
   }
 
   private removeEventListener() {
     if (this.isInitEvent) {
       this.isInitEvent = false;
-      document.removeEventListener("keydown", this.eventListener);
+      document.removeEventListener('keydown', this.eventListener);
     }
   }
 
-  private isAleadyElementById = (id: string) => {
+  private isAlreadyElementById = (id: string) => {
     return !!document.getElementById(id);
   };
 
   private createElementAppendBody = (id: string) => {
-    if (!this.isAleadyElementById(id)) {
-      const container = document.createElement("div");
-      container.setAttribute("id", id);
+    if (!this.isAlreadyElementById(id)) {
+      const container = document.createElement('div');
+      container.setAttribute('id', id);
       document.body.append(container);
     }
   };
@@ -102,7 +98,7 @@ export default class ModalController {
     document.getElementById(modalId)?.remove();
   };
 
-  private controllBodyOverflow = (isOverflow: boolean) => {
-    document.body.style.overflow = isOverflow ? "" : "hidden";
+  private controlBodyOverflow = (isOverflow: boolean) => {
+    document.body.style.overflow = isOverflow ? '' : 'hidden';
   };
 }
