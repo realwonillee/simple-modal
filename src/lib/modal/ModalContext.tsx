@@ -18,28 +18,35 @@ interface IModalHook {
   actions: {
     open: () => void;
     close: () => void;
+    closeAll: () => void;
   };
 }
 
-const ModalProvider = ({ children }: PropsWithChildren) => {
+const ModalProvider = ({
+  initIsOpen = false,
+  children,
+}: PropsWithChildren<{ initIsOpen?: boolean }>) => {
   const modalId = useId();
   const [isOpen, setIsOpen] = useState(false);
-  const modalService = ModalService.getInstance();
+  const modalService = useMemo(() => ModalService.getInstance(), []);
   const open = useCallback(() => {
-    setIsOpen(true);
     modalService.publish(modalId);
   }, [modalId, modalService]);
   const close = useCallback(() => {
-    setIsOpen(false);
     modalService.unpublish(modalId);
   }, [modalId, modalService]);
+  const closeAll = useCallback(() => {
+    modalService.unpublishAll();
+  }, [modalService]);
+  useEffect(() => {
+    if (initIsOpen) open();
+  }, [initIsOpen, open]);
   useEffect(() => {
     return () => modalService.clean(modalId);
   }, [modalId, modalService]);
   useEffect(() => {
     modalService.subscribe(modalId, (isOpen: boolean) => {
-      if (isOpen) open();
-      else close();
+      setIsOpen(isOpen);
     });
     return () => modalService.unsubscribe(modalId);
   }, [close, modalId, modalService, open]);
@@ -47,8 +54,9 @@ const ModalProvider = ({ children }: PropsWithChildren) => {
     () => ({
       open,
       close,
+      closeAll,
     }),
-    [open, close],
+    [open, close, closeAll],
   );
   return (
     <ModalContext.Provider value={{ modalId, isOpen, actions }}>

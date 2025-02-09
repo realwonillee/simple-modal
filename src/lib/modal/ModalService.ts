@@ -16,12 +16,8 @@ export default class ModalService {
     this.eventListener = (e: KeyboardEvent) => {
       const { key } = e;
       if (key === ESC) {
-        const modalId = this.ids.pop();
-        if (modalId) {
-          this.unpublish(modalId);
-          const subscribe = this.getSubscribe(modalId);
-          return subscribe && subscribe(false);
-        }
+        const modalId = this.ids[this.ids.length - 1];
+        if (modalId) this.unpublish(modalId);
         if (this.ids.length === 0) {
           this.removeEventListener();
         }
@@ -50,18 +46,37 @@ export default class ModalService {
   }
 
   public publish(modalId: string) {
-    this.createElementAppendBody(modalId);
-    this.controlBodyOverflow(false);
-    this.ids.push(modalId);
-    this.addEventListener();
+    console.log(modalId);
+    const subscribe = this.getSubscribe(modalId);
+    if (subscribe) {
+      this.createElementAppendBody(modalId);
+      this.controlBodyOverflow(false);
+      this.ids.push(modalId);
+      this.addEventListener();
+      subscribe(true);
+    }
   }
 
   public unpublish(modalId: string) {
-    this.removeElement(modalId);
-    this.ids.pop();
-    if (this.ids.length === 0) {
-      this.controlBodyOverflow(true);
+    const subscribe = this.getSubscribe(modalId);
+    if (subscribe) {
+      this.removeElement(modalId);
+      this.ids.pop();
+      subscribe(false);
+      if (this.ids.length === 0) {
+        this.controlBodyOverflow(true);
+      }
     }
+  }
+
+  public unpublishAll() {
+    this.ids = this.ids.filter((modalId) => {
+      const subscribe = this.getSubscribe(modalId);
+      if (subscribe) subscribe(false);
+      this.removeElement(modalId);
+      return false;
+    });
+    this.controlBodyOverflow(true);
   }
 
   private getSubscribe(modalId: string) {
