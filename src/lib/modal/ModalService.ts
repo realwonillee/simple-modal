@@ -46,23 +46,22 @@ export default class ModalService {
   }
 
   public publish(modalId: string) {
-    console.log(modalId);
-    const subscribe = this.getSubscribe(modalId);
-    if (subscribe) {
+    const subscribeCallback = this.getSubscribe(modalId);
+    if (subscribeCallback) {
       this.createElementAppendBody(modalId);
       this.controlBodyOverflow(false);
       this.ids.push(modalId);
       this.addEventListener();
-      subscribe(true);
+      subscribeCallback(true);
     }
   }
 
   public unpublish(modalId: string) {
-    const subscribe = this.getSubscribe(modalId);
-    if (subscribe) {
+    const subscribeCallback = this.getSubscribe(modalId);
+    if (subscribeCallback) {
       this.removeElement(modalId);
       this.ids.pop();
-      subscribe(false);
+      subscribeCallback(false);
       if (this.ids.length === 0) {
         this.controlBodyOverflow(true);
       }
@@ -71,8 +70,8 @@ export default class ModalService {
 
   public unpublishAll() {
     this.ids = this.ids.filter((modalId) => {
-      const subscribe = this.getSubscribe(modalId);
-      if (subscribe) subscribe(false);
+      const subscribeCallback = this.getSubscribe(modalId);
+      if (subscribeCallback) subscribeCallback(false);
       this.removeElement(modalId);
       return false;
     });

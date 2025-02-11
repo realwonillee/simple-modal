@@ -4,16 +4,20 @@ import ModalPortal from '@/lib/modal/ModalPortal';
 import { ModalProvider, useModal } from '@/lib/modal/ModalContext';
 import PrimaryButton from '@/components/ds-ui/button/atom/PrimaryButton';
 
+interface IData {
+  name: string;
+}
+
 export default function SecondModalButton() {
   return (
-    <ModalProvider>
+    <ModalProvider<IData> name={'SecondModalButton'}>
       <ModalButton />
     </ModalProvider>
   );
 }
 
 const ModalButton = () => {
-  const { modalId, isOpen, actions } = useModal();
+  const { modalId, isOpen, actions, name } = useModal<IData>();
   return (
     <>
       <PrimaryButton
@@ -31,7 +35,7 @@ const ModalButton = () => {
               className="w-[500px] h-[300px] bg-white"
               onClick={() => actions.close()}
             >
-              두번째 모달
+              두번째 모달 {name}
             </div>
           </div>
         </ModalPortal>

@@ -3,30 +3,18 @@
 import ModalPortal from '@/lib/modal/ModalPortal';
 import { ModalProvider, useModal } from '@/lib/modal/ModalContext';
 import PrimaryButton from '@/components/ds-ui/button/atom/PrimaryButton';
-import { useEffect, forwardRef, useImperativeHandle } from 'react';
 
-export default forwardRef(function FirstModalButton(_, ref) {
+export default function FirstModalButton() {
   return (
-    <ModalProvider initIsOpen>
-      <ModalButton ref={ref} />
+    <ModalProvider isInitOpen>
+      <ModalButton />
       <ModalLayerPopup />
     </ModalProvider>
   );
-});
+}
 
-const ModalButton = forwardRef((_, ref) => {
+const ModalButton = () => {
   const { actions } = useModal();
-  useEffect(() => {
-    setTimeout(() => {
-      actions.open();
-    }, 1000);
-  }, [actions]);
-
-  useImperativeHandle(ref, () => ({
-    open: () => {
-      actions.open();
-    },
-  }));
   return (
     <PrimaryButton
       type="button"
@@ -34,7 +22,7 @@ const ModalButton = forwardRef((_, ref) => {
       onClick={() => actions.open()}
     />
   );
-});
+};
 
 ModalButton.displayName = 'ModalButton';
 

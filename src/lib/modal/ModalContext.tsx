@@ -22,34 +22,47 @@ interface IModalHook {
   };
 }
 
-const ModalProvider = ({
-  initIsOpen = false,
+function ModalProvider<T>({
+  isInitOpen = false,
   children,
-}: PropsWithChildren<{ initIsOpen?: boolean }>) => {
+  ...props
+}: PropsWithChildren<{ isInitOpen?: boolean } & T>) {
   const modalId = useId();
+  const [isMounted, setIsMounted] = useState(isInitOpen);
   const [isOpen, setIsOpen] = useState(false);
-  const modalService = useMemo(() => ModalService.getInstance(), []);
+  const modalService = ModalService.getInstance();
+
   const open = useCallback(() => {
     modalService.publish(modalId);
   }, [modalId, modalService]);
+
   const close = useCallback(() => {
     modalService.unpublish(modalId);
   }, [modalId, modalService]);
+
   const closeAll = useCallback(() => {
     modalService.unpublishAll();
   }, [modalService]);
-  useEffect(() => {
-    if (initIsOpen) open();
-  }, [initIsOpen, open]);
+
   useEffect(() => {
     return () => modalService.clean(modalId);
   }, [modalId, modalService]);
+
   useEffect(() => {
     modalService.subscribe(modalId, (isOpen: boolean) => {
       setIsOpen(isOpen);
     });
+    setIsMounted(true);
     return () => modalService.unsubscribe(modalId);
   }, [close, modalId, modalService, open]);
+
+  useEffect(() => {
+    if (isMounted) {
+      if (isInitOpen) open();
+      else close();
+    }
+  }, [isMounted, isInitOpen, open, close]);
+
   const actions = useMemo(
     () => ({
       open,
@@ -58,13 +71,16 @@ const ModalProvider = ({
     }),
     [open, close, closeAll],
   );
+
   return (
-    <ModalContext.Provider value={{ modalId, isOpen, actions }}>
+    <ModalContext.Provider value={{ modalId, isOpen, actions, ...props }}>
       {children}
     </ModalContext.Provider>
   );
-};
+}
 
-const useModal = () => useContext(ModalContext) as IModalHook;
+function useModal<T>() {
+  return useContext(ModalContext) as IModalHook & T;
+}
 
 export { ModalProvider, useModal };
