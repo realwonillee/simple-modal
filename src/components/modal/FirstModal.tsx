@@ -33,11 +33,11 @@ const ModalLayerPopup = () => {
       <ModalPortal modalId={modalId}>
         <div
           className="fixed top-0 left-0 z-[1px] bg-[#dddddd70] flex justify-center items-center w-full h-full"
-          onClick={() => actions.closeAll()}
+          onClick={() => actions.close()}
         >
           <div
             className="w-[300px] h-[200px] bg-white"
-            onClick={() => actions.closeAll()}
+            onClick={() => actions.close()}
           >
             첫번째 모달
           </div>

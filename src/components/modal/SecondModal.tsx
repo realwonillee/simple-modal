@@ -29,11 +29,11 @@ const ModalButton = () => {
         <ModalPortal modalId={modalId}>
           <div
             className="fixed top-0 left-0 z-[1px] bg-[#dddddd70] flex justify-center items-center w-full h-full"
-            onClick={() => actions.close()}
+            onClick={() => actions.selfClose()}
           >
             <div
               className="w-[500px] h-[300px] bg-white"
-              onClick={() => actions.close()}
+              onClick={() => actions.selfClose()}
             >
               두번째 모달 {name}
             </div>

@@ -12,13 +12,13 @@ import ModalService from '@/lib/modal/ModalService';
 
 const ModalContext = createContext({});
 
-interface IModalHook {
+interface IModalContext {
   modalId: string;
   isOpen: boolean;
   actions: {
     open: () => void;
     close: () => void;
-    closeAll: () => void;
+    selfClose: () => void;
   };
 }
 
@@ -28,7 +28,7 @@ function ModalProvider<T>({
   ...props
 }: PropsWithChildren<{ isInitOpen?: boolean } & T>) {
   const modalId = useId();
-  const [isMounted, setIsMounted] = useState(isInitOpen);
+  const [isMounted, setIsMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const modalService = ModalService.getInstance();
 
@@ -36,11 +36,11 @@ function ModalProvider<T>({
     modalService.publish(modalId);
   }, [modalId, modalService]);
 
-  const close = useCallback(() => {
+  const selfClose = useCallback(() => {
     modalService.unpublish(modalId);
   }, [modalId, modalService]);
 
-  const closeAll = useCallback(() => {
+  const close = useCallback(() => {
     modalService.unpublishAll();
   }, [modalService]);
 
@@ -57,30 +57,30 @@ function ModalProvider<T>({
   }, [close, modalId, modalService, open]);
 
   useEffect(() => {
-    if (isMounted) {
-      if (isInitOpen) open();
-      else close();
-    }
+    if (isMounted && isInitOpen) open();
   }, [isMounted, isInitOpen, open, close]);
 
   const actions = useMemo(
     () => ({
       open,
       close,
-      closeAll,
+      selfClose,
     }),
-    [open, close, closeAll],
+    [open, close, selfClose],
+  );
+
+  const store = useMemo(
+    () => ({ modalId, isOpen, actions, ...props }),
+    [modalId, isOpen, actions, props],
   );
 
   return (
-    <ModalContext.Provider value={{ modalId, isOpen, actions, ...props }}>
-      {children}
-    </ModalContext.Provider>
+    <ModalContext.Provider value={store}>{children}</ModalContext.Provider>
   );
 }
 
 function useModal<T>() {
-  return useContext(ModalContext) as IModalHook & T;
+  return useContext(ModalContext) as IModalContext & T;
 }
 
 export { ModalProvider, useModal };
