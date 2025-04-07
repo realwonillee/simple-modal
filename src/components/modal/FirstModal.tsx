@@ -1,33 +1,49 @@
 'use client';
 
 import ModalPortal from '@/lib/modal/ModalPortal';
-import { ModalProvider, useModal } from '@/lib/modal/ModalContext';
 import PrimaryButton from '@/components/ds-ui/button/atom/PrimaryButton';
+import { useEffect } from 'react';
+import { useModal } from '@/lib/modal/useModal2';
 
 export default function FirstModalButton() {
+  const modal = useModal();
   return (
-    <ModalProvider isInitOpen>
-      <ModalButton />
-      <ModalLayerPopup />
-    </ModalProvider>
+    <>
+      <ModalButton open={modal.actions.open} />
+      <ModalLayerPopup {...modal} />
+    </>
   );
 }
 
-const ModalButton = () => {
-  const { actions } = useModal();
+const ModalButton = ({ open }: { open: () => void }) => {
   return (
     <PrimaryButton
       type="button"
       label="첫번째 모달열기"
-      onClick={() => actions.open()}
+      onClick={() => open()}
     />
   );
 };
 
 ModalButton.displayName = 'ModalButton';
 
-const ModalLayerPopup = () => {
-  const { modalId, isOpen, actions } = useModal();
+const ModalLayerPopup = ({
+  modalId,
+  isOpen,
+  actions,
+}: {
+  modalId: string;
+  isOpen: boolean;
+  actions: { open: () => void; close: () => void };
+}) => {
+  const { open } = actions;
+
+  useEffect(() => {
+    setTimeout(() => {
+      open();
+    }, 3000);
+  }, [open]);
+
   return (
     isOpen && (
       <ModalPortal modalId={modalId}>

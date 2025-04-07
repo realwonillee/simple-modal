@@ -1,7 +1,7 @@
 'use client';
 
 import ModalPortal from '@/lib/modal/ModalPortal';
-import { ModalProvider, useModal } from '@/lib/modal/ModalContext';
+import { ModalProvider, useModalContext } from '@/lib/modal/ModalContext';
 import PrimaryButton from '@/components/ds-ui/button/atom/PrimaryButton';
 
 interface IData {
@@ -10,14 +10,15 @@ interface IData {
 
 export default function SecondModalButton() {
   return (
-    <ModalProvider<IData> name={'SecondModalButton'}>
-      <ModalButton />
-    </ModalProvider>
+    // <ModalProvider<IData> name={'SecondModalButton'}>
+    <ModalButton />
+    // </ModalProvider>
   );
 }
 
 const ModalButton = () => {
-  const { modalId, isOpen, actions, name } = useModal<IData>();
+  const { id, modalId, isOpen, actions } = useModalContext();
+  console.log(id);
   return (
     <>
       <PrimaryButton
@@ -29,13 +30,13 @@ const ModalButton = () => {
         <ModalPortal modalId={modalId}>
           <div
             className="fixed top-0 left-0 z-[1px] bg-[#dddddd70] flex justify-center items-center w-full h-full"
-            onClick={() => actions.selfClose()}
+            onClick={() => actions.close(true)}
           >
             <div
               className="w-[500px] h-[300px] bg-white"
-              onClick={() => actions.selfClose()}
+              onClick={() => actions.close(true)}
             >
-              두번째 모달 {name}
+              두번째 모달
             </div>
           </div>
         </ModalPortal>

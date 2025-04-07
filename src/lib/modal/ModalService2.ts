@@ -4,14 +4,10 @@ const ESC = 'Escape';
 
 export default class ModalService {
   private static instance: ModalService;
-  private subscriptions: Map<string, TSubscribeCallback>;
-  private ids: string[];
   private isInitEvent: boolean;
   private readonly eventListener: (e: KeyboardEvent) => void;
 
   private constructor() {
-    this.subscriptions = new Map();
-    this.ids = [];
     this.isInitEvent = false;
     this.eventListener = (e: KeyboardEvent) => {
       const { key } = e;
@@ -32,63 +28,9 @@ export default class ModalService {
     return this.instance;
   }
 
-  public subscribe(modalId: string, callback: TSubscribeCallback) {
-    this.subscriptions.set(modalId, callback);
-  }
-
-  public unsubscribe(modalId: string) {
-    this.subscriptions.delete(modalId);
-  }
-
   public clean(modalId: string) {
     this.removeEventListener();
     this.removeElement(modalId);
-  }
-
-  public publish(modalId: string) {
-    if (this.ids.includes(modalId)) return;
-    const subscribeCallback = this.getSubscribe(modalId);
-    if (subscribeCallback) {
-      this.createElementAppendBody(modalId);
-      this.controlBodyOverflow(false);
-      this.ids.push(modalId);
-      this.addEventListener();
-      subscribeCallback(true);
-    }
-  }
-
-  public replacePublish(modalId: string, isReplaceAll?: boolean) {
-    if (isReplaceAll) this.unpublishAll();
-    else if (this.ids.length > 1) {
-      this.unpublish(this.ids[this.ids.length - 2]);
-    }
-    this.publish(modalId);
-  }
-
-  public unpublish(modalId: string) {
-    const subscribeCallback = this.getSubscribe(modalId);
-    if (subscribeCallback) {
-      this.removeElement(modalId);
-      this.ids.pop();
-      subscribeCallback(false);
-      if (this.ids.length === 0) {
-        this.controlBodyOverflow(true);
-      }
-    }
-  }
-
-  public unpublishAll() {
-    this.ids = this.ids.filter((modalId) => {
-      const subscribeCallback = this.getSubscribe(modalId);
-      if (subscribeCallback) subscribeCallback(false);
-      this.removeElement(modalId);
-      return false;
-    });
-    this.controlBodyOverflow(true);
-  }
-
-  private getSubscribe(modalId: string) {
-    return this.subscriptions.get(modalId);
   }
 
   private addEventListener() {

@@ -13,36 +13,50 @@ import ModalService from '@/lib/modal/ModalService';
 const ModalContext = createContext({});
 
 interface IModalContext {
+  id: number;
   modalId: string;
   isOpen: boolean;
   actions: {
     open: () => void;
-    close: () => void;
-    selfClose: () => void;
+    replace: (isAllReplace?: boolean) => void;
+    close: (isAllClose?: boolean) => void;
   };
 }
 
+let count = 1;
 function ModalProvider<T>({
   isInitOpen = false,
   children,
   ...props
 }: PropsWithChildren<{ isInitOpen?: boolean } & T>) {
   const modalId = useId();
+  const [id] = useState(count++);
   const [isMounted, setIsMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const modalService = ModalService.getInstance();
 
-  const open = useCallback(() => {
-    modalService.publish(modalId);
-  }, [modalId, modalService]);
+  const open = useCallback(
+    (isReplace?: boolean) => {
+      if (isReplace) modalService.replacePublish(modalId);
+      else modalService.publish(modalId);
+    },
+    [modalId, modalService],
+  );
 
-  const selfClose = useCallback(() => {
-    modalService.unpublish(modalId);
-  }, [modalId, modalService]);
+  const replace = useCallback(
+    (isAllReplace?: boolean) => {
+      modalService.replacePublish(modalId, isAllReplace);
+    },
+    [modalId, modalService],
+  );
 
-  const close = useCallback(() => {
-    modalService.unpublishAll();
-  }, [modalService]);
+  const close = useCallback(
+    (isAllClose?: boolean) => {
+      if (isAllClose) modalService.unpublishAll();
+      else modalService.unpublish(modalId);
+    },
+    [modalId, modalService],
+  );
 
   useEffect(() => {
     return () => modalService.clean(modalId);
@@ -63,15 +77,15 @@ function ModalProvider<T>({
   const actions = useMemo(
     () => ({
       open,
+      replace,
       close,
-      selfClose,
     }),
-    [open, close, selfClose],
+    [open, replace, close],
   );
 
   const store = useMemo(
-    () => ({ modalId, isOpen, actions, ...props }),
-    [modalId, isOpen, actions, props],
+    () => ({ id, modalId, isOpen, actions, ...props }),
+    [id, modalId, isOpen, actions, props],
   );
 
   return (
@@ -79,8 +93,8 @@ function ModalProvider<T>({
   );
 }
 
-function useModal<T>() {
+function useModalContext<T>() {
   return useContext(ModalContext) as IModalContext & T;
 }
 
-export { ModalProvider, useModal };
+export { ModalProvider, useModalContext };
