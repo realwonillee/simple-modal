@@ -5,10 +5,12 @@ import PrimaryButton from '@/components/ds-ui/button/atom/PrimaryButton';
 import { OverlappedModal } from '@/components/modal/OverlappedModal';
 
 export default function Home() {
-  const { actions } = useModal();
+  const { modalId, actions } = useModal();
 
   const handleModalOpen = () => {
-    actions.open(<OverlappedModal close={actions.close} />);
+    actions.open(
+      <OverlappedModal modalId={modalId} close={actions.closeAll} />,
+    );
   };
 
   return (

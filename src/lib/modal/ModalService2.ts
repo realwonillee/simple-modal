@@ -2,30 +2,65 @@ type TSubscribeCallback = (isOpen: boolean) => void;
 
 const ESC = 'Escape';
 
-export default class ModalService {
-  private static instance: ModalService;
+export default class ModalService2 {
+  private static instance: ModalService2;
+  private subscriptions: Map<string, TSubscribeCallback>;
+  private ids: string[];
   private isInitEvent: boolean;
   private readonly eventListener: (e: KeyboardEvent) => void;
 
   private constructor() {
+    this.subscriptions = new Map();
+    this.ids = [];
     this.isInitEvent = false;
     this.eventListener = (e: KeyboardEvent) => {
       const { key } = e;
       if (key === ESC) {
-        const modalId = this.ids[this.ids.length - 1];
+        const modalId = this.ids.pop();
         if (modalId) this.unpublish(modalId);
-        if (this.ids.length === 0) {
-          this.removeEventListener();
-        }
       }
     };
+    this.addEventListener();
   }
 
   public static getInstance() {
     if (!this.instance) {
-      this.instance = new ModalService();
+      this.instance = new ModalService2();
     }
     return this.instance;
+  }
+
+  public subscribe(modalId: string, callback: TSubscribeCallback) {
+    this.subscriptions.set(modalId, callback);
+  }
+
+  public unsubscribe(modalId: string) {
+    this.subscriptions.delete(modalId);
+    if (this.subscriptions.size === 0) this.clean(modalId);
+  }
+
+  public publish(modalId: string) {
+    if (this.ids.includes(modalId)) return;
+    const subscribeCallback = this.getSubscribe(modalId);
+    if (subscribeCallback) {
+      this.createElement(modalId);
+      this.controlBodyOverflow(false);
+      this.ids.push(modalId);
+      this.addEventListener();
+    }
+  }
+
+  public unpublish(modalId: string) {
+    const subscribeCallback = this.getSubscribe(modalId);
+    if (subscribeCallback) {
+      this.removeElement(modalId);
+      this.ids.pop();
+      if (this.ids.length === 0) this.controlBodyOverflow(true);
+    }
+  }
+
+  private getSubscribe(modalId: string) {
+    return this.subscriptions.get(modalId);
   }
 
   public clean(modalId: string) {
@@ -51,15 +86,17 @@ export default class ModalService {
     return !!document.getElementById(id);
   };
 
-  private createElementAppendBody = (id: string) => {
+  public createElement = (id: string) => {
     if (!this.isAlreadyElementById(id)) {
+      this.controlBodyOverflow(false);
       const container = document.createElement('div');
       container.setAttribute('id', id);
       document.body.append(container);
     }
   };
 
-  private removeElement = (modalId: string) => {
+  public removeElement = (modalId: string) => {
+    this.controlBodyOverflow(true);
     document.getElementById(modalId)?.remove();
   };
 
