@@ -1,9 +1,9 @@
-import { ReactElement } from 'react';
+import type { ReactNode } from 'react';
 import ReactDOM from 'react-dom';
 
 interface IProps {
   modalId: string;
-  children: ReactElement;
+  children: ReactNode;
 }
 
 export default function ModalPortal({ modalId, children }: IProps) {

@@ -1,6 +1,7 @@
 import { ReactNode, useCallback, useEffect, useId, useMemo } from 'react';
 import { useModalContext } from '@/lib/modal/ModalContext2';
 import ModalService2 from '@/lib/modal/ModalService2';
+import ModalPortal from './ModalPortal';
 
 export const useModal = () => {
   const {
@@ -12,7 +13,7 @@ export const useModal = () => {
   const open = useCallback(
     (element: ReactNode) => {
       ModalService2.getInstance().publish(modalId);
-      publish(modalId, element);
+      publish(modalId, <ModalPortal modalId={modalId}>{element}</ModalPortal>);
     },
     [publish, modalId],
   );
