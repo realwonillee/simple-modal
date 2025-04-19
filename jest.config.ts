@@ -9,8 +9,8 @@ const config: Config = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
-    '^.+\\.(ts|tsx)$': ['babel-jest', { configFile: './babel.config.js' }],
-    '^.+\\.(js|jsx)$': ['babel-jest', { configFile: './babel.config.js' }],
+    '^.+\\.(ts|tsx)$': ['babel-jest', { configFile: './.babelrc.js' }],
+    '^.+\\.(js|jsx)$': ['babel-jest', { configFile: './.babelrc.js' }],
   },
   transformIgnorePatterns: ['/node_modules/(?!(nanoid|shortid)/)'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
