@@ -15,7 +15,7 @@ export default function Home() {
   };
 
   const callback = () => {
-    modalAction.replace(<OverlappedModal2 close={modalAction.close} />);
+    modalAction.replace(<OverlappedModal2 close={modalAction.close} />, true);
   };
 
   return (
