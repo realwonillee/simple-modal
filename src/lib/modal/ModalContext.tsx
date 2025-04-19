@@ -1,95 +1,126 @@
 import {
   createContext,
+  ReactElement,
   useCallback,
   useContext,
   useEffect,
-  useId,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { PropsWithChildren } from 'react';
-import ModalService from '@/lib/modal/ModalService';
-
-const ModalContext = createContext({});
+import shortid from 'shortid';
+import ModalService2 from './ModalService';
+import ModalPortal from './ModalPortal';
+export const ModalContext = createContext({});
 
 interface IModalContext {
-  id: number;
-  modalId: string;
-  isOpen: boolean;
-  actions: {
-    open: () => void;
-    replace: (isAllReplace?: boolean) => void;
-    close: (isAllClose?: boolean) => void;
+  modalAction: {
+    isOpen: (modalId: string) => boolean;
+    open: (element: ReactElement) => void;
+    replace: (element: ReactElement, isReplaceAll?: boolean) => void;
+    close: () => void;
+    closeAll: () => void;
   };
 }
 
-let count = 1;
-function ModalProvider<T>({
-  isInitOpen = false,
-  children,
-  ...props
-}: PropsWithChildren<{ isInitOpen?: boolean } & T>) {
-  const modalId = useId();
-  const [id] = useState(count++);
-  const [isMounted, setIsMounted] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const modalService = ModalService.getInstance();
-
-  const open = useCallback(
-    (isReplace?: boolean) => {
-      if (isReplace) modalService.replacePublish(modalId);
-      else modalService.publish(modalId);
-    },
-    [modalId, modalService],
+function ModalProvider({ children }: PropsWithChildren) {
+  const [modalMap, setModalMap] = useState<Map<string, ReactElement>>(
+    new Map(),
   );
+  const modalMapRef = useRef<Map<string, ReactElement>>(modalMap);
+
+  const getModalId = useCallback((modalStackIndex: number = -1) => {
+    return (
+      Array.from(modalMapRef.current)[modalStackIndex]?.[0] ??
+      `modal-${shortid.generate()}`
+    );
+  }, []);
+
+  const isOpen = useCallback((modalId: string) => {
+    return modalMapRef.current.has(modalId);
+  }, []);
+
+  const closeAll = useCallback(() => {
+    ModalService2.getInstance().unsubscribeAll();
+    setModalMap(new Map());
+  }, []);
+
+  const close = useCallback(() => {
+    setModalMap((prev) => {
+      const clone = new Map(prev);
+      const id = Array.from(clone)[clone.size - 1]?.[0];
+      ModalService2.getInstance().unsubscribe(id);
+      clone.delete(id);
+      return clone;
+    });
+  }, []);
 
   const replace = useCallback(
-    (isAllReplace?: boolean) => {
-      modalService.replacePublish(modalId, isAllReplace);
+    (element: ReactElement, isReplaceAll?: boolean) => {
+      if (isReplaceAll) {
+        const id = getModalId();
+        ModalService2.getInstance().unsubscribeAll();
+        ModalService2.getInstance().subscribe(id, (isOpen: boolean) => {
+          if (!isOpen) close();
+        });
+        setModalMap(new Map([[id, element]]));
+      } else {
+        setModalMap((prev) => {
+          const clone = new Map(prev);
+          const id = Array.from(clone)[clone.size - 1]?.[0] ?? getModalId();
+          ModalService2.getInstance().subscribe(id, (isOpen: boolean) => {
+            if (!isOpen) close();
+          });
+          clone.set(id, element);
+          return clone;
+        });
+      }
     },
-    [modalId, modalService],
+    [close, getModalId],
   );
 
-  const close = useCallback(
-    (isAllClose?: boolean) => {
-      if (isAllClose) modalService.unpublishAll();
-      else modalService.unpublish(modalId);
+  const open = useCallback(
+    (element: ReactElement) => {
+      setModalMap((prev) => {
+        const clone = new Map(prev);
+        const id = getModalId();
+        ModalService2.getInstance().subscribe(id, (isOpen: boolean) => {
+          if (!isOpen) close();
+        });
+        clone.set(id, element);
+        return clone;
+      });
     },
-    [modalId, modalService],
+    [close, getModalId],
   );
 
   useEffect(() => {
-    return () => modalService.clean(modalId);
-  }, [modalId, modalService]);
-
-  useEffect(() => {
-    modalService.subscribe(modalId, (isOpen: boolean) => {
-      setIsOpen(isOpen);
-    });
-    setIsMounted(true);
-    return () => modalService.unsubscribe(modalId);
-  }, [close, modalId, modalService, open]);
-
-  useEffect(() => {
-    if (isMounted && isInitOpen) open();
-  }, [isMounted, isInitOpen, open, close]);
-
-  const actions = useMemo(
-    () => ({
-      open,
-      replace,
-      close,
-    }),
-    [open, replace, close],
-  );
+    modalMapRef.current = modalMap;
+  }, [modalMap]);
 
   const store = useMemo(
-    () => ({ id, modalId, isOpen, actions, ...props }),
-    [id, modalId, isOpen, actions, props],
+    () => ({
+      modalAction: {
+        isOpen,
+        open,
+        replace,
+        close,
+        closeAll,
+      },
+    }),
+    [isOpen, open, replace, close, closeAll],
   );
 
   return (
-    <ModalContext.Provider value={store}>{children}</ModalContext.Provider>
+    <ModalContext.Provider value={store}>
+      {children}
+      {Array.from(modalMap.entries()).map(([key, element]) => (
+        <ModalPortal key={key} modalId={key}>
+          {element}
+        </ModalPortal>
+      ))}
+    </ModalContext.Provider>
   );
 }
 

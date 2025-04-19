@@ -1,16 +1,21 @@
 'use client';
 
-import { useModal } from '@/lib/modal/useModal2';
 import PrimaryButton from '@/components/ds-ui/button/atom/PrimaryButton';
-import { OverlappedModal } from '@/components/modal/OverlappedModal';
+import { useModalContext } from '@/lib/modal/ModalContext';
+import { OverlappedModal } from './modal/OverlappedModal';
+import { OverlappedModal2 } from './modal/OverlappedModal2';
 
 export default function Home() {
-  const { modalId, actions } = useModal();
+  const { modalAction } = useModalContext();
 
   const handleModalOpen = () => {
-    actions.open(
-      <OverlappedModal modalId={modalId} close={actions.closeAll} />,
+    modalAction.open(
+      <OverlappedModal close={modalAction.close} callback={callback} />,
     );
+  };
+
+  const callback = () => {
+    modalAction.replace(<OverlappedModal2 close={modalAction.close} />);
   };
 
   return (
