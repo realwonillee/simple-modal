@@ -2,19 +2,16 @@ import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
-// Mock before imports
 jest.mock('shortid', () => ({
   generate: () => 'mock-id',
 }));
 
-// Mock ModalPortal to prevent DOM errors
 jest.mock('../ModalPortal', () => {
   return function MockModalPortal({ children }: { children: React.ReactNode }) {
     return <div>{children}</div>;
   };
 });
 
-// Mock ModalService with inline functions
 jest.mock('../ModalService', () => ({
   __esModule: true,
   default: {
@@ -26,19 +23,8 @@ jest.mock('../ModalService', () => ({
   },
 }));
 
-// Import after mocks
 import { ModalProvider, useModalContext } from '../ModalContext';
-
-// Define the interface inline instead of importing
-interface IModalContext {
-  modalAction: {
-    isOpen: (modalId: string) => boolean;
-    open: (element: React.ReactElement) => void;
-    replace: (element: React.ReactElement, isReplaceAll?: boolean) => void;
-    close: () => void;
-    closeAll: () => void;
-  };
-}
+import type { IModalContext } from '../types';
 
 // Test Component that uses the modal context
 const TestComponent = () => {
@@ -137,7 +123,6 @@ describe('ModalContext', () => {
       </ModalProvider>,
     );
 
-    // Open multiple modals
     const openButton = screen.getByTestId('open-button');
     act(() => {
       fireEvent.click(openButton);
@@ -182,7 +167,6 @@ describe('ModalContext', () => {
       </ModalProvider>,
     );
 
-    // Open multiple modals
     const openButton = screen.getByTestId('open-button');
     act(() => {
       fireEvent.click(openButton);
