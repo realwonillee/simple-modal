@@ -7,6 +7,6 @@ interface IProps {
 }
 
 export default function ModalPortal({ modalId, children }: IProps) {
-  const modalElement = document.getElementById(modalId)!;
-  return ReactDOM.createPortal(children, modalElement);
+  const modalElement = document.getElementById(modalId);
+  return modalElement !== null && ReactDOM.createPortal(children, modalElement);
 }

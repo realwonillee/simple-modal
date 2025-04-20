@@ -15,7 +15,7 @@ export default function Home() {
   };
 
   const callback = () => {
-    modalAction.replace(<OverlappedModal2 close={modalAction.close} />);
+    modalAction.open(<OverlappedModal2 close={modalAction.close} />);
   };
 
   return (
@@ -26,8 +26,6 @@ export default function Home() {
           label="첫번째 모달열기"
           onClick={handleModalOpen}
         />
-        {/*<FirstModalButton />*/}
-        {/*<SecondModalButton />*/}
       </div>
     </div>
   );
