@@ -26,8 +26,6 @@ export default function Home() {
           label="첫번째 모달열기"
           onClick={handleModalOpen}
         />
-        {/*<FirstModalButton />*/}
-        {/*<SecondModalButton />*/}
       </div>
     </div>
   );
