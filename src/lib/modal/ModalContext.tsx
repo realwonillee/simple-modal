@@ -22,12 +22,7 @@ function ModalProvider({ children }: PropsWithChildren) {
   );
   const modalMapRef = useRef<Map<string, ReactElement>>(modalMap);
 
-  const getModalId = useCallback((modalStackIndex: number = -1) => {
-    return (
-      Array.from(modalMapRef.current)[modalStackIndex]?.[0] ??
-      `modal-${shortid.generate()}`
-    );
-  }, []);
+  const getModalId = useCallback(() => `modal-${shortid.generate()}`, []);
 
   const isOpen = useCallback((modalId: string) => {
     return modalMapRef.current.has(modalId);
