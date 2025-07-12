@@ -17,12 +17,20 @@ import type { IModalContext } from './types';
 const ModalContext = createContext({});
 
 function ModalProvider({ children }: PropsWithChildren) {
+  const [closeingModalId, setCloseingModalId] = useState<string | null>(null);
   const [modalMap, setModalMap] = useState<Map<string, ReactElement>>(
     new Map(),
   );
   const modalMapRef = useRef<Map<string, ReactElement>>(modalMap);
 
   const getModalId = useCallback(() => `modal-${shortid.generate()}`, []);
+
+  const getTopModalId = useCallback(
+    () =>
+      Array.from(modalMapRef.current)[modalMapRef.current.size - 1]?.[0] ??
+      null,
+    [modalMapRef],
+  );
 
   const isOpen = useCallback((modalId: string) => {
     return modalMapRef.current.has(modalId);
@@ -31,7 +39,12 @@ function ModalProvider({ children }: PropsWithChildren) {
   const closeAll = useCallback(() => {
     ModalService.getInstance().unsubscribeAll();
     setModalMap(new Map());
+    setCloseingModalId(null);
   }, []);
+
+  const closeBefore = useCallback(() => {
+    setCloseingModalId(getTopModalId() ?? null);
+  }, [getTopModalId]);
 
   const close = useCallback(() => {
     setModalMap((prev) => {
@@ -41,6 +54,7 @@ function ModalProvider({ children }: PropsWithChildren) {
       clone.delete(id);
       return clone;
     });
+    setCloseingModalId(null);
   }, []);
 
   const subscribeCallback = useCallback(
@@ -72,12 +86,14 @@ function ModalProvider({ children }: PropsWithChildren) {
 
   const open = useCallback(
     (element: ReactElement) => {
-      setModalMap((prev) => {
-        const clone = new Map(prev);
-        const id = getModalId();
-        ModalService.getInstance().subscribe(id, subscribeCallback);
-        clone.set(id, element);
-        return clone;
+      requestAnimationFrame(() => {
+        setModalMap((prev) => {
+          const clone = new Map(prev);
+          const id = getModalId();
+          ModalService.getInstance().subscribe(id, subscribeCallback);
+          clone.set(id, element);
+          return clone;
+        });
       });
     },
     [subscribeCallback, getModalId],
@@ -87,27 +103,38 @@ function ModalProvider({ children }: PropsWithChildren) {
     modalMapRef.current = modalMap;
   }, [modalMap]);
 
+  useEffect(() => {
+    if (closeingModalId) {
+      setTimeout(() => {
+        close();
+      }, 100);
+    }
+  }, [closeingModalId, close]);
+
   const store = useMemo(
     () => ({
+      closeingModalId,
       modalAction: {
         isOpen,
         open,
         replace,
-        close,
+        close: closeBefore,
         closeAll,
       },
     }),
-    [isOpen, open, replace, close, closeAll],
+    [closeingModalId, isOpen, open, replace, closeBefore, closeAll],
   );
 
   return (
     <ModalContext.Provider value={store}>
       {children}
-      {Array.from(modalMap.entries()).map(([modalId, element]) => (
-        <ModalPortal key={modalId} modalId={modalId}>
-          {element}
-        </ModalPortal>
-      ))}
+      {Array.from(modalMap.entries()).map(([modalId, element]) => {
+        return (
+          <ModalPortal key={modalId} modalId={modalId}>
+            {element}
+          </ModalPortal>
+        );
+      })}
     </ModalContext.Provider>
   );
 }

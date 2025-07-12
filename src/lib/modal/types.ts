@@ -1,6 +1,7 @@
 import { ReactElement } from 'react';
 
 export interface IModalContext {
+  closeingModalId: string | null;
   modalAction: {
     isOpen: (modalId: string) => boolean;
     open: (element: ReactElement) => void;
