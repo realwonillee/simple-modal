@@ -11,7 +11,7 @@ const ModalDim = ({
     <div
       className={`${
         !isClosing ? 'animate-fadeIn' : 'animate-fadeOut'
-      } fixed bg-[rgba(0,0,0)] bg-opacity-${dimOpacity} w-full h-full`}
+      } fixed bg-[rgba(0,0,0)] element-opacity-${dimOpacity} w-full h-full`}
     />
   );
 };

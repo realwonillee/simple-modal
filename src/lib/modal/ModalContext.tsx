@@ -19,6 +19,7 @@ import { useEscapeFocusAway } from '@/hooks/useEscapeFocusAway';
 const ModalContext = createContext({});
 
 function ModalProvider({ children }: PropsWithChildren) {
+  const scrollLock = useBodyScrollLock();
   const [closeingModalId, setCloseingModalId] = useState<string | null>(null);
   const [modalMap, setModalMap] = useState<Map<string, ReactElement>>(
     new Map(),
@@ -104,8 +105,6 @@ function ModalProvider({ children }: PropsWithChildren) {
     }),
     [closeingModalId, isOpen, open, replace, close, closeAll],
   );
-
-  const scrollLock = useBodyScrollLock();
   useEscapeFocusAway({ callback: close });
 
   useEffect(() => {

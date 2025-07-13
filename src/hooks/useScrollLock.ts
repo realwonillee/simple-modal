@@ -1,6 +1,7 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 const useBodyScrollLock = () => {
+  const scrollBarWidthRef = useRef<number>();
   const originalPaddingRightRef = useRef<string>('');
 
   const getBodyComputedScrollStyle = useCallback(() => {
@@ -11,17 +12,13 @@ const useBodyScrollLock = () => {
     };
   }, []);
 
-  const getScrollBarWidth = useCallback(() => {
-    return window.innerWidth - document.documentElement.clientWidth;
-  }, []);
-
   const lock = useCallback(() => {
     const { overflow, paddingRight } = getBodyComputedScrollStyle();
     if (overflow === 'hidden') return;
     originalPaddingRightRef.current = paddingRight;
     document.body.style.overflow = 'hidden';
-    document.body.style.paddingRight = `${getScrollBarWidth()}px`;
-  }, [getBodyComputedScrollStyle, getScrollBarWidth]);
+    document.body.style.paddingRight = `${scrollBarWidthRef.current}px`;
+  }, [getBodyComputedScrollStyle]);
 
   const unlock = useCallback(() => {
     const { overflow } = getBodyComputedScrollStyle();
@@ -35,6 +32,13 @@ const useBodyScrollLock = () => {
       document.body.removeAttribute('style');
     }
   }, [getBodyComputedScrollStyle]);
+
+  useEffect(() => {
+    if (!scrollBarWidthRef.current) {
+      scrollBarWidthRef.current =
+        window.innerWidth - document.documentElement.clientWidth;
+    }
+  }, []);
 
   return {
     lock,

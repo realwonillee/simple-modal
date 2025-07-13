@@ -5,11 +5,11 @@ export const useClickAway = ({
   handler,
 }: {
   ref: React.RefObject<HTMLElement>;
-  handler: (event: MouseEvent | TouchEvent | KeyboardEvent) => void;
+  handler: (event: MouseEvent | TouchEvent) => void;
   isActiveEscape?: boolean;
 }) => {
   useEffect(() => {
-    const listener = (e: MouseEvent | TouchEvent | KeyboardEvent) => {
+    const listener = (e: MouseEvent | TouchEvent) => {
       if (!ref.current || ref.current.contains(e.target as Node)) return;
       handler(e);
     };

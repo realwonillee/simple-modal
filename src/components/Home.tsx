@@ -12,7 +12,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex justify-center items-center h-[100vh]">
+    <div className="flex justify-center items-center h-[1500px]">
       <div className="flex flex-col gap-5">
         <PrimaryButton
           type="button"
