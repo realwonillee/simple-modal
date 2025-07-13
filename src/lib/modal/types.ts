@@ -15,17 +15,19 @@ export interface IConfirmModalContent {
   cancel?: IConfirmButton;
 }
 
+export interface IModalContent {
+  kind?: 'popup' | 'alert';
+  element: ReactElement;
+}
+
 export interface IModalContext {
   closeingModalId: string | null;
   modalActions: {
     isOpen: (modalId: string) => boolean;
-    open: (element: ReactElement) => void;
-    replace: (element: ReactElement, isReplaceAll?: boolean) => void;
+    isOpenAlert: () => boolean;
+    open: (content: IModalContent) => void;
+    replace: (content: IModalContent, isReplaceAll?: boolean) => void;
     close: () => void;
     closeAll: () => void;
-    warn: (params: Omit<IConfirmModalContent, 'confirmKind'>) => void;
-    error: (params: Omit<IConfirmModalContent, 'confirmKind'>) => void;
-    info: (params: Omit<IConfirmModalContent, 'confirmKind'>) => void;
-    success: (params: Omit<IConfirmModalContent, 'confirmKind'>) => void;
   };
 }

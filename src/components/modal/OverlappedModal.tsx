@@ -1,13 +1,23 @@
 import PrimaryButton from '@/components/ds-ui/button/atom/PrimaryButton';
 import { useModalContext } from '@/lib/modal/ModalContext';
+import useConfirmModal from '@/lib/modal/useAlertModal';
 
 export const OverlappedModal = () => {
+  const alertActions = useConfirmModal();
   const { modalActions } = useModalContext();
 
   const handleModalOpen = () => {
-    modalActions.warn({
+    alertActions.warn({
       title: 'test',
       description: 'test',
+      confirm: {
+        label: '확인',
+        callback: () => {},
+      },
+      cancel: {
+        label: '취소',
+        callback: () => {},
+      },
     });
   };
 

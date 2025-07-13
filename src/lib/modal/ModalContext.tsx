@@ -11,11 +11,10 @@ import {
 import type { PropsWithChildren } from 'react';
 import shortid from 'shortid';
 import ModalPortal from './ModalPortal';
-import type { IConfirmModalContent, IModalContext } from './types';
+import type { IModalContent, IModalContext } from './types';
 import { flushSync } from 'react-dom';
 import useBodyScrollLock from '@/hooks/useScrollLock';
 import { useEscapeFocusAway } from '@/hooks/useEscapeFocusAway';
-import ConfirmModal from '@/components/modal/ConfirmModal';
 
 const ANIMATION_DURATION = 80;
 
@@ -24,10 +23,10 @@ const ModalContext = createContext({});
 function ModalProvider({ children }: PropsWithChildren) {
   const scrollLock = useBodyScrollLock();
   const [closeingModalId, setCloseingModalId] = useState<string | null>(null);
-  const [modalMap, setModalMap] = useState<Map<string, ReactElement>>(
+  const [modalMap, setModalMap] = useState<Map<string, IModalContent>>(
     new Map(),
   );
-  const modalMapRef = useRef<Map<string, ReactElement>>(modalMap);
+  const modalMapRef = useRef<Map<string, IModalContent>>(modalMap);
 
   const generateModalId = useCallback(() => `modal-${shortid.generate()}`, []);
 
@@ -40,6 +39,12 @@ function ModalProvider({ children }: PropsWithChildren) {
 
   const isOpen = useCallback((modalId: string) => {
     return modalMapRef.current.has(modalId);
+  }, []);
+
+  const isOpenAlert = useCallback(() => {
+    return Array.from(modalMapRef.current).some(
+      ([, { kind }]) => kind === 'alert',
+    );
   }, []);
 
   const closeAll = useCallback(() => {
@@ -64,10 +69,18 @@ function ModalProvider({ children }: PropsWithChildren) {
   }, [closeBefore]);
 
   const replace = useCallback(
-    (element: ReactElement, isReplaceAll?: boolean) => {
+    ({
+      kind = 'popup',
+      element,
+      isReplaceAll,
+    }: {
+      kind?: 'popup' | 'alert';
+      element: ReactElement;
+      isReplaceAll?: boolean;
+    }) => {
       if (isReplaceAll) {
         const id = generateModalId();
-        setModalMap(new Map([[id, element]]));
+        setModalMap(new Map([[id, { kind, element }]]));
       } else {
         setModalMap((prev) => {
           const clone = new Map(prev);
@@ -75,7 +88,7 @@ function ModalProvider({ children }: PropsWithChildren) {
             Array.from(clone)[clone.size - 1]?.[0] ?? generateModalId();
           clone.delete(id);
           const newId = generateModalId();
-          clone.set(newId, element);
+          clone.set(newId, { kind, element });
           return clone;
         });
       }
@@ -84,65 +97,20 @@ function ModalProvider({ children }: PropsWithChildren) {
   );
 
   const open = useCallback(
-    (element: ReactElement) => {
+    ({
+      kind = 'popup',
+      element,
+    }: {
+      kind?: 'popup' | 'alert';
+      element: ReactElement;
+    }) => {
       setModalMap((prev) => {
         const clone = new Map(prev);
-        clone.set(generateModalId(), element);
+        clone.set(generateModalId(), { kind, element });
         return clone;
       });
     },
     [generateModalId],
-  );
-
-  const openConfirm = useCallback(
-    (content: IConfirmModalContent) => {
-      setModalMap((prev) => {
-        const clone = new Map(prev);
-        clone.set(generateModalId(), <ConfirmModal {...content} />);
-        return clone;
-      });
-    },
-    [generateModalId],
-  );
-
-  const warn = useCallback(
-    (params: Omit<IConfirmModalContent, 'confirmKind'>) => {
-      openConfirm({
-        ...params,
-        confirmKind: 'warning',
-      });
-    },
-    [openConfirm],
-  );
-
-  const error = useCallback(
-    (params: Omit<IConfirmModalContent, 'confirmKind'>) => {
-      openConfirm({
-        ...params,
-        confirmKind: 'error',
-      });
-    },
-    [openConfirm],
-  );
-
-  const info = useCallback(
-    (params: Omit<IConfirmModalContent, 'confirmKind'>) => {
-      openConfirm({
-        ...params,
-        confirmKind: 'info',
-      });
-    },
-    [openConfirm],
-  );
-
-  const success = useCallback(
-    (params: Omit<IConfirmModalContent, 'confirmKind'>) => {
-      openConfirm({
-        ...params,
-        confirmKind: 'success',
-      });
-    },
-    [openConfirm],
   );
 
   const store = useMemo(
@@ -150,28 +118,14 @@ function ModalProvider({ children }: PropsWithChildren) {
       closeingModalId,
       modalActions: {
         isOpen,
+        isOpenAlert,
         open,
         replace,
         close,
         closeAll,
-        warn,
-        error,
-        info,
-        success,
       },
     }),
-    [
-      closeingModalId,
-      isOpen,
-      open,
-      replace,
-      close,
-      closeAll,
-      warn,
-      error,
-      info,
-      success,
-    ],
+    [closeingModalId, isOpen, isOpenAlert, open, replace, close, closeAll],
   );
   useEscapeFocusAway({ callback: close });
 
@@ -187,7 +141,7 @@ function ModalProvider({ children }: PropsWithChildren) {
   return (
     <ModalContext.Provider value={store}>
       {children}
-      {Array.from(modalMap.entries()).map(([modalId, element], index) => (
+      {Array.from(modalMap.entries()).map(([modalId, { element }], index) => (
         <ModalPortal
           key={modalId}
           modalId={modalId}

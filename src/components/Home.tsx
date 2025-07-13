@@ -8,7 +8,7 @@ export default function Home() {
   const { modalActions } = useModalContext();
 
   const handleModalOpen = () => {
-    modalActions.open(<OverlappedModal />);
+    modalActions.open({ element: <OverlappedModal /> });
   };
 
   return (
