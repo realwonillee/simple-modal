@@ -10,9 +10,11 @@ import {
 } from 'react';
 import type { PropsWithChildren } from 'react';
 import shortid from 'shortid';
-import ModalService from './ModalService';
 import ModalPortal from './ModalPortal';
 import type { IModalContext } from './types';
+import { flushSync } from 'react-dom';
+import useBodyScrollLock from '@/hooks/useScrollLock';
+import { useEscapeFocusAway } from '@/hooks/useEscapeFocusAway';
 
 const ModalContext = createContext({});
 
@@ -23,7 +25,7 @@ function ModalProvider({ children }: PropsWithChildren) {
   );
   const modalMapRef = useRef<Map<string, ReactElement>>(modalMap);
 
-  const getModalId = useCallback(() => `modal-${shortid.generate()}`, []);
+  const generateModalId = useCallback(() => `modal-${shortid.generate()}`, []);
 
   const getTopModalId = useCallback(
     () =>
@@ -37,79 +39,57 @@ function ModalProvider({ children }: PropsWithChildren) {
   }, []);
 
   const closeAll = useCallback(() => {
-    ModalService.getInstance().unsubscribeAll();
     setModalMap(new Map());
     setCloseingModalId(null);
   }, []);
 
   const closeBefore = useCallback(() => {
-    setCloseingModalId(getTopModalId() ?? null);
+    flushSync(() => setCloseingModalId(getTopModalId() ?? null));
   }, [getTopModalId]);
 
   const close = useCallback(() => {
-    setModalMap((prev) => {
-      const clone = new Map(prev);
-      const id = Array.from(clone)[clone.size - 1]?.[0];
-      ModalService.getInstance().unsubscribe(id);
-      clone.delete(id);
-      return clone;
-    });
-    setCloseingModalId(null);
-  }, []);
-
-  const subscribeCallback = useCallback(
-    (isOpen: boolean) => {
-      if (!isOpen) close();
-    },
-    [close],
-  );
+    closeBefore();
+    setTimeout(() => {
+      setModalMap((prev) => {
+        const clone = new Map(prev);
+        const id = Array.from(clone)[clone.size - 1]?.[0];
+        clone.delete(id);
+        return clone;
+      });
+    }, 100);
+  }, [closeBefore]);
 
   const replace = useCallback(
     (element: ReactElement, isReplaceAll?: boolean) => {
       if (isReplaceAll) {
-        const id = getModalId();
-        ModalService.getInstance().unsubscribeAll();
-        ModalService.getInstance().subscribe(id, subscribeCallback);
+        const id = generateModalId();
         setModalMap(new Map([[id, element]]));
       } else {
         setModalMap((prev) => {
           const clone = new Map(prev);
-          const id = Array.from(clone)[clone.size - 1]?.[0] ?? getModalId();
-          ModalService.getInstance().subscribe(id, subscribeCallback);
-          clone.set(id, element);
+          const id =
+            Array.from(clone)[clone.size - 1]?.[0] ?? generateModalId();
+          clone.delete(id);
+          const newId = generateModalId();
+          clone.set(newId, element);
           return clone;
         });
       }
     },
-    [subscribeCallback, getModalId],
+    [generateModalId],
   );
 
   const open = useCallback(
     (element: ReactElement) => {
-      requestAnimationFrame(() => {
-        setModalMap((prev) => {
-          const clone = new Map(prev);
-          const id = getModalId();
-          ModalService.getInstance().subscribe(id, subscribeCallback);
-          clone.set(id, element);
-          return clone;
-        });
+      setModalMap((prev) => {
+        const clone = new Map(prev);
+        const id = generateModalId();
+        clone.set(id, element);
+        return clone;
       });
     },
-    [subscribeCallback, getModalId],
+    [generateModalId],
   );
-
-  useEffect(() => {
-    modalMapRef.current = modalMap;
-  }, [modalMap]);
-
-  useEffect(() => {
-    if (closeingModalId) {
-      setTimeout(() => {
-        close();
-      }, 100);
-    }
-  }, [closeingModalId, close]);
 
   const store = useMemo(
     () => ({
@@ -118,19 +98,35 @@ function ModalProvider({ children }: PropsWithChildren) {
         isOpen,
         open,
         replace,
-        close: closeBefore,
+        close,
         closeAll,
       },
     }),
-    [closeingModalId, isOpen, open, replace, closeBefore, closeAll],
+    [closeingModalId, isOpen, open, replace, close, closeAll],
   );
+
+  const scrollLock = useBodyScrollLock();
+  useEscapeFocusAway({ callback: close });
+
+  useEffect(() => {
+    modalMapRef.current = modalMap;
+    if (modalMap.size > 0) {
+      scrollLock.lock();
+    } else {
+      scrollLock.unlock();
+    }
+  }, [modalMap, scrollLock]);
 
   return (
     <ModalContext.Provider value={store}>
       {children}
-      {Array.from(modalMap.entries()).map(([modalId, element]) => {
+      {Array.from(modalMap.entries()).map(([modalId, element], index) => {
         return (
-          <ModalPortal key={modalId} modalId={modalId}>
+          <ModalPortal
+            key={modalId}
+            modalId={modalId}
+            dimOpacity={index ? 10 : 40}
+          >
             {element}
           </ModalPortal>
         );
@@ -139,8 +135,8 @@ function ModalProvider({ children }: PropsWithChildren) {
   );
 }
 
-function useModalContext<T>() {
-  return useContext(ModalContext) as IModalContext & T;
+function useModalContext() {
+  return useContext(ModalContext) as IModalContext;
 }
 
 export { ModalProvider, useModalContext };

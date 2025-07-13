@@ -1,16 +1,26 @@
-import { PropsWithChildren } from 'react';
+import { PropsWithChildren, useMemo } from 'react';
 import ModalDialog from './ModalDialog';
 import ModalDim from './ModalDim';
+import { useModalContext } from '@/lib/modal/ModalContext';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 const ModalContainer = ({
   children,
+  dimOpacity,
   modalId,
-  isClosing,
-}: PropsWithChildren<{ modalId: string; isClosing: boolean }>) => {
-  console.log('modalId', modalId);
+}: PropsWithChildren<{ dimOpacity: number; modalId: string }>) => {
+  const ref = useFocusTrap(true);
+  const { closeingModalId } = useModalContext();
+  const isClosing = useMemo(
+    () => closeingModalId === modalId,
+    [closeingModalId, modalId],
+  );
   return (
-    <div className="fixed z-[1000] top-0 left-0 w-full h-full flex justify-center items-center">
-      <ModalDim isClosing={isClosing} />
+    <div
+      ref={ref}
+      className="fixed z-[1000] top-0 left-0 w-full h-full flex justify-center items-center"
+    >
+      <ModalDim isClosing={isClosing} dimOpacity={dimOpacity} />
       <ModalDialog isClosing={isClosing}>{children}</ModalDialog>
     </div>
   );

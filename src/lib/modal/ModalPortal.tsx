@@ -1,26 +1,19 @@
-import { ReactElement, useMemo } from 'react';
+import { ReactElement } from 'react';
 import ReactDOM from 'react-dom';
-import { useModalContext } from './ModalContext';
 import ModalContainer from '@/components/modal/ModalContainer';
 
 interface IProps {
   modalId: string;
+  dimOpacity: number;
   children: ReactElement;
 }
 
-export default function ModalPortal({ modalId, children }: IProps) {
-  const { closeingModalId } = useModalContext();
-  const isClosing = useMemo(
-    () => closeingModalId === modalId,
-    [closeingModalId, modalId],
-  );
-  const modalElement = document.getElementById(modalId);
+export default function ModalPortal({ children, ...rest }: IProps) {
+  const modalElement = document.getElementById('my-modal');
   return (
     modalElement !== null &&
     ReactDOM.createPortal(
-      <ModalContainer isClosing={isClosing} modalId={modalId}>
-        {children}
-      </ModalContainer>,
+      <ModalContainer {...rest}>{children}</ModalContainer>,
       modalElement,
     )
   );

@@ -1,11 +1,19 @@
-const ModalDim = ({ isClosing }: { isClosing: boolean }) => {
+import { memo } from 'react';
+
+const ModalDim = ({
+  isClosing,
+  dimOpacity,
+}: {
+  isClosing: boolean;
+  dimOpacity: number;
+}) => {
   return (
     <div
-      className={`fixed bg-[#dddddd] w-full h-full ${
+      className={`${
         !isClosing ? 'animate-fadeIn' : 'animate-fadeOut'
-      }`}
+      } fixed bg-[rgba(0,0,0)] bg-opacity-${dimOpacity} w-full h-full`}
     />
   );
 };
 
-export default ModalDim;
+export default memo(ModalDim);

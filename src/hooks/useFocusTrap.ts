@@ -1,4 +1,3 @@
-'use client';
 import { useEffect, useRef } from 'react';
 import useKeyPress from './useKeyPress';
 
@@ -24,14 +23,14 @@ export const useFocusTrap = (isActive: boolean) => {
     if (e.shiftKey) {
       // 첫 번째 요소에서 Shift+Tab을 누르면 마지막 요소로 이동
       if (document.activeElement === firstElement) {
-        lastElement.focus();
+        lastElement.focus({ preventScroll: true });
         e.preventDefault();
       }
     } else {
       // Tab만 누른 경우
       // 마지막 요소에서 Tab을 누르면 첫 번째 요소로 이동
       if (document.activeElement === lastElement) {
-        firstElement.focus();
+        firstElement.focus({ preventScroll: true });
         e.preventDefault();
       }
     }
@@ -44,14 +43,14 @@ export const useFocusTrap = (isActive: boolean) => {
       modalRef.current.querySelectorAll(focusableSelector);
 
     if (focusableElements.length > 0) {
-      (focusableElements[0] as HTMLElement).focus();
+      (focusableElements[0] as HTMLElement).focus({ preventScroll: true });
     } else {
-      modalRef.current.focus();
+      modalRef.current.focus({ preventScroll: true });
     }
 
     return () => {
       if (previousFocusRef.current) {
-        previousFocusRef.current.focus();
+        previousFocusRef.current.focus({ preventScroll: true });
       }
     };
   }, [isActive]);

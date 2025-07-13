@@ -17,8 +17,8 @@ export default function RootLayout({
       <body>
         <Provider>
           {children}
-          <div id="roouty-modal" />
-          <div id="roouty-alert" />
+          <div id="my-modal" />
+          <div id="my-alert" />
         </Provider>
       </body>
     </html>

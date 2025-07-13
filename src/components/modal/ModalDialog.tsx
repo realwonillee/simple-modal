@@ -1,4 +1,4 @@
-import { PropsWithChildren } from 'react';
+import { memo, PropsWithChildren } from 'react';
 
 const ModalDialog = ({
   children,
@@ -16,4 +16,4 @@ const ModalDialog = ({
   );
 };
 
-export default ModalDialog;
+export default memo(ModalDialog);
