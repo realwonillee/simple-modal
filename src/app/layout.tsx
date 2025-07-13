@@ -15,7 +15,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Provider>{children}</Provider>
+        <Provider>
+          {children}
+          <div id="my-modal" />
+          <div id="my-alert" />
+        </Provider>
       </body>
     </html>
   );

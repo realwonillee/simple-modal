@@ -1,7 +1,5 @@
-'use client';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { RefObject } from 'react';
-import { off, on } from '@/lib/overlay/common';
 
 type ModifierKey = 'Alt' | 'AltGraph' | 'Control' | 'Shift' | 'Meta';
 type NavigationKey =
@@ -29,18 +27,22 @@ const useKeyPress = (
     keyup: keyupCallback || (() => {}),
   });
 
-  const targetKeys = Array.isArray(targetKey) ? targetKey : [targetKey];
+  const targetKeys = useMemo(
+    () => (Array.isArray(targetKey) ? targetKey : [targetKey]),
+    [targetKey],
+  );
 
-  // 콜백 업데이트
   useEffect(() => {
     savedCallbacks.current.keydown = keydownCallback;
     savedCallbacks.current.keyup = keyupCallback || (() => {});
   }, [keydownCallback, keyupCallback]);
 
-  // 이벤트 타입에 따른 핸들러 생성 함수
   const createHandler = useCallback(
-    (eventType: KeyboardEventType) => (e: KeyboardEvent) => {
-      if (targetKeys.includes(e.key as KeyboardKey)) {
+    (eventType: KeyboardEventType) => (e: Event) => {
+      if (
+        e instanceof KeyboardEvent &&
+        targetKeys.includes(e.key as KeyboardKey)
+      ) {
         savedCallbacks.current[eventType](e);
       }
     },
@@ -49,24 +51,21 @@ const useKeyPress = (
 
   // 이벤트 리스너 설정
   useEffect(() => {
-    const element = elementRef?.current || document;
+    const element = (elementRef?.current as HTMLElement) || document;
     if (!element) return;
 
     const keydownHandler = createHandler('keydown');
-    // keyupCallback이 제공된 경우에만 keyup 이벤트 리스너 등록
     const keyupHandler = keyupCallback ? createHandler('keyup') : null;
 
-    on(element, 'keydown', keydownHandler);
-
+    element.addEventListener('keydown', keydownHandler);
     if (keyupHandler) {
-      on(element, 'keyup', keyupHandler);
+      element.addEventListener('keyup', keyupHandler);
     }
 
     return () => {
-      off(element, 'keydown', keydownHandler);
-
+      element.removeEventListener('keydown', keydownHandler);
       if (keyupHandler) {
-        off(element, 'keyup', keyupHandler);
+        element.removeEventListener('keyup', keyupHandler);
       }
     };
   }, [createHandler, elementRef, keyupCallback]);

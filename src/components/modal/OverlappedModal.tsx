@@ -1,23 +1,23 @@
 import PrimaryButton from '@/components/ds-ui/button/atom/PrimaryButton';
+import { useModalContext } from '@/lib/modal/ModalContext';
+import { OverlappedModal2 } from './OverlappedModal2';
 
-export const OverlappedModal = ({
-  close,
-  callback,
-}: {
-  close: () => void;
-  callback: () => void;
-}) => {
+export const OverlappedModal = () => {
+  const { modalAction } = useModalContext();
+
+  const handleModalOpen = () => {
+    modalAction.open(<OverlappedModal2 close={modalAction.close} />);
+  };
+
   return (
-    <div className="fixed top-0 left-0 z-[1px] bg-[#dddddd70] flex justify-center items-center w-full h-full">
-      <div className="w-[300px] h-[200px] bg-white">
-        첫번째 모달
-        <PrimaryButton
-          type="button"
-          label="두번째 모달열기"
-          onClick={callback}
-        />
-        <PrimaryButton type="button" label="닫기" onClick={close} />
-      </div>
+    <div className="w-[300px] h-[200px] bg-white">
+      첫번째 모달
+      <PrimaryButton
+        type="button"
+        label="두번째 모달열기"
+        onClick={handleModalOpen}
+      />
+      <PrimaryButton type="button" label="닫기" onClick={modalAction.close} />
     </div>
   );
 };
