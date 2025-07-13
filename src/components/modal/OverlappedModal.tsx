@@ -10,12 +10,12 @@ export const OverlappedModal = () => {
     alertActions.warn({
       title: 'test',
       description: 'test',
-      confirm: {
-        label: '확인',
-        callback: () => {},
-      },
       cancel: {
         label: '취소',
+        callback: () => {},
+      },
+      confirm: {
+        label: '확인',
         callback: () => {},
       },
     });

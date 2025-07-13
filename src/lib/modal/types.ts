@@ -8,7 +8,7 @@ interface IConfirmButton {
 }
 
 export interface IConfirmModalContent {
-  confirmKind: 'warning' | 'error' | 'info' | 'success' | 'loading';
+  confirmKind: 'warn' | 'error' | 'info' | 'success' | 'loading';
   title: string | string[];
   description: string | string[];
   confirm?: IConfirmButton;
@@ -16,7 +16,7 @@ export interface IConfirmModalContent {
 }
 
 export interface IModalContent {
-  kind?: 'popup' | 'alert';
+  kind?: 'popup' | 'alert' | 'loading';
   element: ReactElement;
 }
 

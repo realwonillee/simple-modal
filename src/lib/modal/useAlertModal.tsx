@@ -20,7 +20,7 @@ const useAlertModal = () => {
     (params: Omit<IConfirmModalContent, 'confirmKind'>) => {
       openAlert({
         ...params,
-        confirmKind: 'warning',
+        confirmKind: 'warn',
       });
     },
     [openAlert],
