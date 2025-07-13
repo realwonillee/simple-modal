@@ -5,10 +5,10 @@ import { useModalContext } from '@/lib/modal/ModalContext';
 import { OverlappedModal } from './modal/OverlappedModal';
 
 export default function Home() {
-  const { modalAction } = useModalContext();
+  const { modalActions } = useModalContext();
 
   const handleModalOpen = () => {
-    modalAction.open(<OverlappedModal />);
+    modalActions.open(<OverlappedModal />);
   };
 
   return (

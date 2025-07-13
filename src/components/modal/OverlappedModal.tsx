@@ -1,12 +1,14 @@
 import PrimaryButton from '@/components/ds-ui/button/atom/PrimaryButton';
 import { useModalContext } from '@/lib/modal/ModalContext';
-import { OverlappedModal2 } from './OverlappedModal2';
 
 export const OverlappedModal = () => {
-  const { modalAction } = useModalContext();
+  const { modalActions } = useModalContext();
 
   const handleModalOpen = () => {
-    modalAction.open(<OverlappedModal2 close={modalAction.close} />);
+    modalActions.warn({
+      title: 'test',
+      description: 'test',
+    });
   };
 
   return (
@@ -17,7 +19,7 @@ export const OverlappedModal = () => {
         label="두번째 모달열기"
         onClick={handleModalOpen}
       />
-      <PrimaryButton type="button" label="닫기" onClick={modalAction.close} />
+      <PrimaryButton type="button" label="닫기" onClick={modalActions.close} />
     </div>
   );
 };
