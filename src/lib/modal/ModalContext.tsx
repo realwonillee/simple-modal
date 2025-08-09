@@ -1,5 +1,6 @@
 import {
   createContext,
+  isValidElement,
   ReactElement,
   useCallback,
   useContext,
@@ -11,63 +12,92 @@ import {
 import type { PropsWithChildren } from 'react';
 import shortid from 'shortid';
 import ModalPortal from './ModalPortal';
-import type { IConfirmModalContent, IModalContext } from './types';
-import { flushSync } from 'react-dom';
+import type {
+  IConfirmModalContent,
+  IModalContent,
+  IModalContext,
+} from './types';
 import useBodyScrollLock from '@/hooks/useScrollLock';
 import { useEscapeFocusAway } from '@/hooks/useEscapeFocusAway';
 import ConfirmModal from '@/components/modal/ConfirmModal';
 
-const ANIMATION_DURATION = 80;
+const ANIMATION_DURATION = 100;
 
 const ModalContext = createContext({});
 
 function ModalProvider({ children }: PropsWithChildren) {
   const scrollLock = useBodyScrollLock();
-  const [closeingModalId, setCloseingModalId] = useState<string | null>(null);
-  const [modalMap, setModalMap] = useState<Map<string, ReactElement>>(
+  const [closeingModalIdList, setCloseingModalIdList] = useState<string[]>([]);
+  const [modalMap, setModalMap] = useState<Map<string, IModalContent>>(
     new Map(),
   );
-  const modalMapRef = useRef<Map<string, ReactElement>>(modalMap);
+  const modalMapRef = useRef<Map<string, IModalContent>>(modalMap);
 
   const generateModalId = useCallback(() => `modal-${shortid.generate()}`, []);
-
-  const getTopModalId = useCallback(
-    () =>
-      Array.from(modalMapRef.current)[modalMapRef.current.size - 1]?.[0] ??
-      null,
-    [modalMapRef],
-  );
 
   const isOpen = useCallback((modalId: string) => {
     return modalMapRef.current.has(modalId);
   }, []);
 
-  const closeAll = useCallback(() => {
-    setModalMap(new Map());
-    setCloseingModalId(null);
-  }, []);
-
-  const closeBefore = useCallback(() => {
-    flushSync(() => setCloseingModalId(getTopModalId() ?? null));
-  }, [getTopModalId]);
-
-  const close = useCallback(() => {
-    closeBefore();
-    setTimeout(() => {
+  const open = useCallback(
+    (
+      modalId: string,
+      {
+        kind = 'popup',
+        element,
+      }: {
+        kind?: 'popup' | 'alert';
+        element: ReactElement;
+      },
+    ) => {
       setModalMap((prev) => {
         const clone = new Map(prev);
-        const id = Array.from(clone)[clone.size - 1]?.[0];
-        clone.delete(id);
+        clone.set(modalId, { kind, element });
         return clone;
       });
-    }, ANIMATION_DURATION);
-  }, [closeBefore]);
+    },
+    [],
+  );
+
+  const update = useCallback(
+    ({
+      modalId,
+      content,
+    }: {
+      modalId?: string;
+      content: Partial<IConfirmModalContent>;
+    }) => {
+      setModalMap((prev) => {
+        const clone = new Map(prev);
+        const kind = content.level === 'loading' ? 'loading' : 'alert';
+        const targetModalId = modalId ?? Array.from(clone)[clone.size - 1]?.[0];
+        const prevContent = clone.get(targetModalId);
+        if (prevContent && !isValidElement(prevContent.element)) {
+          clone.set(targetModalId, {
+            kind,
+            element: { ...prevContent.element, ...content },
+          });
+          return clone;
+        }
+        return prev;
+      });
+    },
+    [],
+  );
 
   const replace = useCallback(
-    (element: ReactElement, isReplaceAll?: boolean) => {
+    ({
+      kind = 'popup',
+      element,
+      isReplaceAll,
+    }: {
+      kind?: 'popup' | 'alert' | 'loading';
+      element: ReactElement;
+      isReplaceAll?: boolean;
+    }) => {
       if (isReplaceAll) {
-        const id = generateModalId();
-        setModalMap(new Map([[id, element]]));
+        const modalId = generateModalId();
+        setModalMap(new Map([[modalId, { kind, element }]]));
       } else {
         setModalMap((prev) => {
           const clone = new Map(prev);
@@ -75,7 +105,7 @@ function ModalProvider({ children }: PropsWithChildren) {
             Array.from(clone)[clone.size - 1]?.[0] ?? generateModalId();
           clone.delete(id);
           const newId = generateModalId();
-          clone.set(newId, element);
+          clone.set(newId, { kind, element });
           return clone;
         });
       }
@@ -83,94 +113,72 @@ function ModalProvider({ children }: PropsWithChildren) {
     [generateModalId],
   );
 
-  const open = useCallback(
-    (element: ReactElement) => {
+  const close = useCallback((modalId?: string) => {
+    const targetModalId =
+      modalId ??
+      Array.from(modalMapRef.current)[modalMapRef.current.size - 1]?.[0];
+    if (targetModalId) {
+      setCloseingModalIdList([targetModalId]);
+    }
+  }, []);
+
+  const removeModal = useCallback(() => {
+    setTimeout(() => {
       setModalMap((prev) => {
         const clone = new Map(prev);
-        clone.set(generateModalId(), element);
+        closeingModalIdList.forEach((modalId) => {
+          clone.delete(modalId);
+        });
         return clone;
       });
-    },
-    [generateModalId],
-  );
+      setCloseingModalIdList([]);
+    }, ANIMATION_DURATION);
+  }, [closeingModalIdList]);
 
-  const openConfirm = useCallback(
-    (content: IConfirmModalContent) => {
-      setModalMap((prev) => {
-        const clone = new Map(prev);
-        clone.set(generateModalId(), <ConfirmModal {...content} />);
-        return clone;
-      });
-    },
-    [generateModalId],
-  );
-
-  const warn = useCallback(
-    (params: Omit<IConfirmModalContent, 'confirmKind'>) => {
-      openConfirm({
-        ...params,
-        confirmKind: 'warning',
-      });
-    },
-    [openConfirm],
-  );
-
-  const error = useCallback(
-    (params: Omit<IConfirmModalContent, 'confirmKind'>) => {
-      openConfirm({
-        ...params,
-        confirmKind: 'error',
-      });
-    },
-    [openConfirm],
-  );
-
-  const info = useCallback(
-    (params: Omit<IConfirmModalContent, 'confirmKind'>) => {
-      openConfirm({
-        ...params,
-        confirmKind: 'info',
-      });
-    },
-    [openConfirm],
-  );
-
-  const success = useCallback(
-    (params: Omit<IConfirmModalContent, 'confirmKind'>) => {
-      openConfirm({
-        ...params,
-        confirmKind: 'success',
-      });
-    },
-    [openConfirm],
-  );
+  const closeAll = useCallback((isForce?: boolean) => {
+    if (isForce) {
+      setCloseingModalIdList(Array.from(modalMapRef.current.keys()));
+    } else {
+      const closeingModalIdList = Array.from(modalMapRef.current).reduce(
+        (modalIdList, [modalId, value]) => {
+          if (value.kind !== 'alert') {
+            modalIdList.push(modalId);
+          } else {
+            const content = value.element as IConfirmModalContent;
+            if (!content.isInactiveCloseAll) {
+              modalIdList.push(modalId);
+            }
+          }
+          return modalIdList;
+        },
+        [] as string[],
+      );
+      setCloseingModalIdList(closeingModalIdList);
+    }
+  }, []);
 
   const store = useMemo(
     () => ({
-      closeingModalId,
+      closeingModalIdList,
       modalActions: {
+        generateModalId,
         isOpen,
         open,
+        update,
         replace,
         close,
         closeAll,
-        warn,
-        error,
-        info,
-        success,
       },
     }),
     [
-      closeingModalId,
+      closeingModalIdList,
+      generateModalId,
       isOpen,
       open,
-      replace,
+      update,
       close,
+      replace,
       closeAll,
-      warn,
-      error,
-      info,
-      success,
     ],
   );
   useEscapeFocusAway({ callback: close });
@@ -184,16 +192,26 @@ function ModalProvider({ children }: PropsWithChildren) {
     }
   }, [modalMap, scrollLock]);
 
+  useEffect(() => {
+    if (closeingModalIdList.length > 0) {
+      removeModal();
+    }
+  }, [closeingModalIdList, removeModal]);
+
   return (
     <ModalContext.Provider value={store}>
       {children}
-      {Array.from(modalMap.entries()).map(([modalId, element], index) => (
+      {Array.from(modalMap.entries()).map(([modalId, { element }], index) => (
         <ModalPortal
           key={modalId}
           modalId={modalId}
           dimOpacity={index ? 10 : 40}
         >
-          {element}
+          {isValidElement(element) ? (
+            element
+          ) : (
+            <ConfirmModal {...(element as IConfirmModalContent)} />
+          )}
         </ModalPortal>
       ))}
     </ModalContext.Provider>

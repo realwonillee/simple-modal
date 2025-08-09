@@ -1,14 +1,33 @@
 'use client';
 
 import PrimaryButton from '@/components/ds-ui/button/atom/PrimaryButton';
-import { useModalContext } from '@/lib/modal/ModalContext';
-import { OverlappedModal } from './modal/OverlappedModal';
+// import { OverlappedModal } from './modal/OverlappedModal';
+import useModal from '@/lib/modal/useModal';
 
 export default function Home() {
-  const { modalActions } = useModalContext();
+  const modal = useModal();
 
   const handleModalOpen = () => {
-    modalActions.open(<OverlappedModal />);
+    modal.warn({
+      title: 'first modal',
+      description: 'first modal description',
+      cancelButton: {
+        isLoading: true,
+      },
+      isInactiveCloseAll: true,
+    });
+    setTimeout(() => {
+      modal.update({
+        title: 'first modal updated',
+        cancelButton: {
+          isLoading: false,
+          label: '확인',
+          callback: () => {
+            modal.close();
+          },
+        },
+      });
+    }, 1000);
   };
 
   return (

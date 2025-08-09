@@ -2,30 +2,43 @@ import { ReactElement } from 'react';
 
 interface IConfirmButton {
   label: string;
-  disabled?: boolean;
-  isLoading?: boolean;
+  disabled: boolean;
+  isLoading: boolean;
   callback: () => void;
 }
 
 export interface IConfirmModalContent {
-  confirmKind: 'warning' | 'error' | 'info' | 'success' | 'loading';
-  title: string | string[];
-  description: string | string[];
-  confirm?: IConfirmButton;
-  cancel?: IConfirmButton;
+  level: 'warn' | 'error' | 'info' | 'success' | 'loading';
+  title?: string | string[];
+  description?: string | string[];
+  cancelButton?: Partial<IConfirmButton>;
+  confirmButton?: Partial<IConfirmButton>;
+  targetKey?: string;
+  isInactiveCloseAll?: boolean;
+}
+
+export interface IModalContent {
+  kind?: 'popup' | 'alert' | 'loading';
+  element: ReactElement | IConfirmModalContent;
 }
 
 export interface IModalContext {
-  closeingModalId: string | null;
+  closeingModalIdList: string[];
   modalActions: {
+    generateModalId: () => string;
     isOpen: (modalId: string) => boolean;
-    open: (element: ReactElement) => void;
-    replace: (element: ReactElement, isReplaceAll?: boolean) => void;
-    close: () => void;
-    closeAll: () => void;
-    warn: (params: Omit<IConfirmModalContent, 'confirmKind'>) => void;
-    error: (params: Omit<IConfirmModalContent, 'confirmKind'>) => void;
-    info: (params: Omit<IConfirmModalContent, 'confirmKind'>) => void;
-    success: (params: Omit<IConfirmModalContent, 'confirmKind'>) => void;
+    isOpenAlert: () => boolean;
+    open: (modalId: string, content: IModalContent) => void;
+    update: ({
+      modalId,
+      content,
+    }: {
+      modalId?: string;
+      content: Partial<IConfirmModalContent>;
+    }) => void;
+    closeBefore: (modalId: string) => void;
+    replace: (content: IModalContent, isReplaceAll?: boolean) => void;
+    close: (targetModalId?: string) => void;
+    closeAll: (isForce?: boolean) => void;
   };
 }
