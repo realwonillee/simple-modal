@@ -1,20 +1,18 @@
 import PrimaryButton from '@/components/ds-ui/button/atom/PrimaryButton';
-import { useModalContext } from '@/lib/modal/ModalContext';
-import useConfirmModal from '@/lib/modal/useAlertModal';
+import useModal from '@/lib/modal/useModal';
 
 export const OverlappedModal = () => {
-  const alertActions = useConfirmModal();
-  const { modalActions } = useModalContext();
+  const modal = useModal();
 
   const handleModalOpen = () => {
-    alertActions.warn({
+    modal.warn({
       title: 'test',
       description: 'test',
-      cancel: {
+      cancelButton: {
         label: '취소',
         callback: () => {},
       },
-      confirm: {
+      confirmButton: {
         label: '확인',
         callback: () => {},
       },
@@ -29,7 +27,7 @@ export const OverlappedModal = () => {
         label="두번째 모달열기"
         onClick={handleModalOpen}
       />
-      <PrimaryButton type="button" label="닫기" onClick={modalActions.close} />
+      <PrimaryButton type="button" label="닫기" onClick={() => modal.close()} />
     </div>
   );
 };

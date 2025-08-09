@@ -1,5 +1,6 @@
 import {
   createContext,
+  isValidElement,
   ReactElement,
   useCallback,
   useContext,
@@ -11,12 +12,16 @@ import {
 import type { PropsWithChildren } from 'react';
 import shortid from 'shortid';
 import ModalPortal from './ModalPortal';
-import type { IModalContent, IModalContext } from './types';
-import { flushSync } from 'react-dom';
+import type {
+  IConfirmModalContent,
+  IModalContent,
+  IModalContext,
+} from './types';
 import useBodyScrollLock from '@/hooks/useScrollLock';
 import { useEscapeFocusAway } from '@/hooks/useEscapeFocusAway';
+import ConfirmModal from '@/components/modal/ConfirmModal';
 
-const ANIMATION_DURATION = 80;
+const ANIMATION_DURATION = 100;
 
 const ModalContext = createContext({});
 
@@ -30,43 +35,55 @@ function ModalProvider({ children }: PropsWithChildren) {
 
   const generateModalId = useCallback(() => `modal-${shortid.generate()}`, []);
 
-  const getTopModalId = useCallback(
-    () =>
-      Array.from(modalMapRef.current)[modalMapRef.current.size - 1]?.[0] ??
-      null,
-    [modalMapRef],
-  );
-
   const isOpen = useCallback((modalId: string) => {
     return modalMapRef.current.has(modalId);
   }, []);
 
-  const isOpenAlert = useCallback(() => {
-    return Array.from(modalMapRef.current).some(
-      ([, { kind }]) => kind === 'alert',
-    );
-  }, []);
-
-  const closeAll = useCallback(() => {
-    setModalMap(new Map());
-    setCloseingModalId(null);
-  }, []);
-
-  const closeBefore = useCallback(() => {
-    flushSync(() => setCloseingModalId(getTopModalId() ?? null));
-  }, [getTopModalId]);
-
-  const close = useCallback(() => {
-    closeBefore();
-    setTimeout(() => {
+  const open = useCallback(
+    (
+      modalId: string,
+      {
+        kind = 'popup',
+        element,
+      }: {
+        kind?: 'popup' | 'alert';
+        element: ReactElement;
+      },
+    ) => {
       setModalMap((prev) => {
         const clone = new Map(prev);
-        const id = Array.from(clone)[clone.size - 1]?.[0];
-        clone.delete(id);
+        clone.set(modalId, { kind, element });
         return clone;
       });
-    }, ANIMATION_DURATION);
-  }, [closeBefore]);
+    },
+    [],
+  );
+
+  const update = useCallback(
+    ({
+      modalId,
+      content,
+    }: {
+      modalId?: string;
+      content: Partial<IConfirmModalContent>;
+    }) => {
+      setModalMap((prev) => {
+        const clone = new Map(prev);
+        const kind = content.level === 'loading' ? 'loading' : 'alert';
+        const targetModalId = modalId ?? Array.from(clone)[clone.size - 1]?.[0];
+        const prevContent = clone.get(targetModalId);
+        if (prevContent && !isValidElement(prevContent.element)) {
+          clone.set(targetModalId, {
+            kind,
+            element: { ...prevContent.element, ...content },
+          });
+          return clone;
+        }
+        return prev;
+      });
+    },
+    [],
+  );
 
   const replace = useCallback(
     ({
@@ -74,13 +91,13 @@ function ModalProvider({ children }: PropsWithChildren) {
       element,
       isReplaceAll,
     }: {
-      kind?: 'popup' | 'alert';
+      kind?: 'popup' | 'alert' | 'loading';
       element: ReactElement;
       isReplaceAll?: boolean;
     }) => {
       if (isReplaceAll) {
-        const id = generateModalId();
-        setModalMap(new Map([[id, { kind, element }]]));
+        const modalId = generateModalId();
+        setModalMap(new Map([[modalId, { kind, element }]]));
       } else {
         setModalMap((prev) => {
           const clone = new Map(prev);
@@ -96,36 +113,71 @@ function ModalProvider({ children }: PropsWithChildren) {
     [generateModalId],
   );
 
-  const open = useCallback(
-    ({
-      kind = 'popup',
-      element,
-    }: {
-      kind?: 'popup' | 'alert';
-      element: ReactElement;
-    }) => {
+  const close = useCallback((modalId?: string) => {
+    const targetModalId =
+      modalId ??
+      Array.from(modalMapRef.current)[modalMapRef.current.size - 1]?.[0];
+    if (targetModalId) {
+      setCloseingModalId(targetModalId);
+    }
+  }, []);
+
+  const removeModal = useCallback(() => {
+    setTimeout(() => {
       setModalMap((prev) => {
         const clone = new Map(prev);
-        clone.set(generateModalId(), { kind, element });
+        const id = Array.from(clone)[clone.size - 1]?.[0];
+        clone.delete(id);
         return clone;
       });
-    },
-    [generateModalId],
-  );
+    }, ANIMATION_DURATION);
+  }, []);
+
+  const closeAll = useCallback((isForce?: boolean) => {
+    if (isForce) {
+      setModalMap(new Map());
+    } else {
+      setModalMap((prev) => {
+        const clone = new Map(prev);
+        Array.from(clone).forEach(([modalId, value]) => {
+          if (value.kind !== 'alert') {
+            clone.delete(modalId);
+          } else {
+            const content = value.element as IConfirmModalContent;
+            if (!content.isInactiveCloseAll) {
+              clone.delete(modalId);
+            }
+          }
+        });
+        return clone;
+      });
+    }
+    setCloseingModalId(null);
+  }, []);
 
   const store = useMemo(
     () => ({
       closeingModalId,
       modalActions: {
+        generateModalId,
         isOpen,
-        isOpenAlert,
         open,
+        update,
         replace,
         close,
         closeAll,
       },
     }),
-    [closeingModalId, isOpen, isOpenAlert, open, replace, close, closeAll],
+    [
+      closeingModalId,
+      generateModalId,
+      isOpen,
+      open,
+      update,
+      close,
+      replace,
+      closeAll,
+    ],
   );
   useEscapeFocusAway({ callback: close });
 
@@ -138,6 +190,12 @@ function ModalProvider({ children }: PropsWithChildren) {
     }
   }, [modalMap, scrollLock]);
 
+  useEffect(() => {
+    if (closeingModalId) {
+      removeModal();
+    }
+  }, [closeingModalId, removeModal]);
+
   return (
     <ModalContext.Provider value={store}>
       {children}
@@ -147,7 +205,11 @@ function ModalProvider({ children }: PropsWithChildren) {
           modalId={modalId}
           dimOpacity={index ? 10 : 40}
         >
-          {element}
+          {isValidElement(element) ? (
+            element
+          ) : (
+            <ConfirmModal {...(element as IConfirmModalContent)} />
+          )}
         </ModalPortal>
       ))}
     </ModalContext.Provider>

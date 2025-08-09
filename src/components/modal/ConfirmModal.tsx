@@ -1,34 +1,31 @@
 import { IConfirmModalContent } from '@/lib/modal/types';
 import PrimaryButton from '../ds-ui/button/atom/PrimaryButton';
-import { useModalContext } from '@/lib/modal/ModalContext';
 
 const ConfirmModal = (props: IConfirmModalContent) => {
-  const { modalActions } = useModalContext();
-  const { confirmKind, title, description, confirm, cancel } = props;
+  const { level, title, description, confirmButton, cancelButton } = props;
   return (
     <div className="w-[300px] h-[200px] bg-white">
       <p>알림모달</p>
-      <p>{confirmKind}</p>
-      <p>{title}</p>
-      <p>{description}</p>
-      {cancel && (
+      <p>level: {level}</p>
+      {title && <p>제목: {title}</p>}
+      {description && <p>내용: {description}</p>}
+      {cancelButton && (
         <PrimaryButton
           type="button"
-          label={cancel.label}
+          label={
+            cancelButton.isLoading ? '로딩중...' : cancelButton.label ?? ''
+          }
           onClick={() => {
-            cancel?.callback();
-            modalActions.closeAll();
+            cancelButton.callback?.();
           }}
         />
       )}
-      {confirm && (
+      {confirmButton && (
         <PrimaryButton
           type="button"
-          label={confirm.label}
-          onClick={() => {
-            cancel?.callback();
-            modalActions.close();
-          }}
+          label={
+            confirmButton.isLoading ? '로딩중...' : confirmButton.label ?? ''
+          }
         />
       )}
     </div>
