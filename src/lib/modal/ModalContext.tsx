@@ -27,7 +27,7 @@ const ModalContext = createContext({});
 
 function ModalProvider({ children }: PropsWithChildren) {
   const scrollLock = useBodyScrollLock();
-  const [closeingModalId, setCloseingModalId] = useState<string | null>(null);
+  const [closeingModalIdList, setCloseingModalIdList] = useState<string[]>([]);
   const [modalMap, setModalMap] = useState<Map<string, IModalContent>>(
     new Map(),
   );
@@ -118,7 +118,7 @@ function ModalProvider({ children }: PropsWithChildren) {
       modalId ??
       Array.from(modalMapRef.current)[modalMapRef.current.size - 1]?.[0];
     if (targetModalId) {
-      setCloseingModalId(targetModalId);
+      setCloseingModalIdList([targetModalId]);
     }
   }, []);
 
@@ -126,38 +126,40 @@ function ModalProvider({ children }: PropsWithChildren) {
     setTimeout(() => {
       setModalMap((prev) => {
         const clone = new Map(prev);
-        const id = Array.from(clone)[clone.size - 1]?.[0];
-        clone.delete(id);
-        return clone;
-      });
-    }, ANIMATION_DURATION);
-  }, []);
-
-  const closeAll = useCallback((isForce?: boolean) => {
-    if (isForce) {
-      setModalMap(new Map());
-    } else {
-      setModalMap((prev) => {
-        const clone = new Map(prev);
-        Array.from(clone).forEach(([modalId, value]) => {
-          if (value.kind !== 'alert') {
-            clone.delete(modalId);
-          } else {
-            const content = value.element as IConfirmModalContent;
-            if (!content.isInactiveCloseAll) {
-              clone.delete(modalId);
-            }
-          }
+        closeingModalIdList.forEach((modalId) => {
+          clone.delete(modalId);
         });
         return clone;
       });
+      setCloseingModalIdList([]);
+    }, ANIMATION_DURATION);
+  }, [closeingModalIdList]);
+
+  const closeAll = useCallback((isForce?: boolean) => {
+    if (isForce) {
+      setCloseingModalIdList(Array.from(modalMapRef.current.keys()));
+    } else {
+      const closeingModalIdList = Array.from(modalMapRef.current).reduce(
+        (modalIdList, [modalId, value]) => {
+          if (value.kind !== 'alert') {
+            modalIdList.push(modalId);
+          } else {
+            const content = value.element as IConfirmModalContent;
+            if (!content.isInactiveCloseAll) {
+              modalIdList.push(modalId);
+            }
+          }
+          return modalIdList;
+        },
+        [] as string[],
+      );
+      setCloseingModalIdList(closeingModalIdList);
     }
-    setCloseingModalId(null);
   }, []);
 
   const store = useMemo(
     () => ({
-      closeingModalId,
+      closeingModalIdList,
       modalActions: {
         generateModalId,
         isOpen,
@@ -169,7 +171,7 @@ function ModalProvider({ children }: PropsWithChildren) {
       },
     }),
     [
-      closeingModalId,
+      closeingModalIdList,
       generateModalId,
       isOpen,
       open,
@@ -191,10 +193,10 @@ function ModalProvider({ children }: PropsWithChildren) {
   }, [modalMap, scrollLock]);
 
   useEffect(() => {
-    if (closeingModalId) {
+    if (closeingModalIdList.length > 0) {
       removeModal();
     }
-  }, [closeingModalId, removeModal]);
+  }, [closeingModalIdList, removeModal]);
 
   return (
     <ModalContext.Provider value={store}>

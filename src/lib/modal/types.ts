@@ -23,7 +23,7 @@ export interface IModalContent {
 }
 
 export interface IModalContext {
-  closeingModalId: string | null;
+  closeingModalIdList: string[];
   modalActions: {
     generateModalId: () => string;
     isOpen: (modalId: string) => boolean;

@@ -10,10 +10,10 @@ const ModalContainer = ({
   modalId,
 }: PropsWithChildren<{ dimOpacity: number; modalId: string }>) => {
   const ref = useFocusTrap(true);
-  const { closeingModalId } = useModalContext();
+  const { closeingModalIdList } = useModalContext();
   const isClosing = useMemo(
-    () => closeingModalId === modalId,
-    [closeingModalId, modalId],
+    () => closeingModalIdList.includes(modalId),
+    [closeingModalIdList, modalId],
   );
   return (
     <div

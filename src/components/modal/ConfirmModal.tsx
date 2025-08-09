@@ -26,6 +26,9 @@ const ConfirmModal = (props: IConfirmModalContent) => {
           label={
             confirmButton.isLoading ? '로딩중...' : confirmButton.label ?? ''
           }
+          onClick={() => {
+            confirmButton.callback?.();
+          }}
         />
       )}
     </div>
